@@ -3,7 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -56,6 +58,15 @@ func main() {
 	// Crear un router Gin
 	router := gin.Default()
 
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"}, // Ajusta según sea necesario
+		AllowMethods:     []string{"GET", "POST"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	// Rutas para jugadores
 	router.GET("/players", getPlayers)          // Obtener todos los jugadores
 	router.POST("/players", addPlayer)          // Crear un nuevo jugador
@@ -85,9 +96,11 @@ func getPlayers(c *gin.Context) {
 func addPlayer(c *gin.Context) {
 	var player Player
 	if err := c.ShouldBindJSON(&player); err != nil {
+		log.Println("Error al enlazar JSON:", err) // Imprimir error
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	log.Printf("Intentando agregar jugador: %+v\n", player)
 	DB.Create(&player)
 	c.JSON(http.StatusOK, player)
 }
